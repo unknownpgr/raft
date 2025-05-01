@@ -6,7 +6,16 @@ import {
   StateMachine,
 } from "./interfaces";
 import { info } from "./output";
-import { PersistentState, VolatileState, LogEntry, RaftEvent } from "./types";
+import {
+  PersistentState,
+  VolatileState,
+  LogEntry,
+  RaftEvent,
+  HeartbeatEvent,
+  RequestVoteEvent,
+  RequestVoteResponseEvent,
+  AppendEntriesEvent,
+} from "./types";
 
 export class RaftNode {
   private persistent: PersistentState;
@@ -53,7 +62,6 @@ export class RaftNode {
       matchIndex: {},
     };
     this.votes = new Set();
-
     this.network = network;
     this.stateMachine = stateMachine;
     this.electionTimer = electionTimer;
@@ -83,163 +91,58 @@ export class RaftNode {
   private handleEvent(event: RaftEvent): void {
     switch (event.type) {
       case "heartbeat-timeout": {
-        if (this.volatile.role === "leader") {
-          this.sendHeartbeats();
-        }
+        this.handleHeartbeatTimeout();
         break;
       }
 
       case "election-timeout": {
-        if (this.volatile.role !== "leader") {
-          this.startElection();
-        }
+        this.handleElectionTimeout();
         break;
       }
 
       case "heartbeat": {
-        if (event.term < this.persistent.term) {
-          return;
-        }
-
-        if (event.term > this.persistent.term) {
-          this.persistent.term = event.term;
-          this.persistent.votedFor = null;
-          this.volatile.role = "follower";
-          this.storage.setRaftNodeState(this.persistent);
-        }
-
-        this.electionTimer.reset();
+        this.handleHeartbeat(event as HeartbeatEvent);
         break;
       }
 
       case "request-vote": {
-        if (event.term < this.persistent.term) {
-          this.network.send(event.from, {
-            type: "request-vote-response",
-            from: this.volatile.nodeId,
-            term: this.persistent.term,
-            voteGranted: false,
-          });
-          return;
-        }
-
-        if (event.term > this.persistent.term) {
-          this.persistent.term = event.term;
-          this.persistent.votedFor = null;
-          this.volatile.role = "follower";
-          this.storage.setRaftNodeState(this.persistent);
-        }
-
-        const voteGranted =
-          (this.persistent.votedFor === null ||
-            this.persistent.votedFor === event.candidateId) &&
-          this.isLogUpToDate(event.lastLogIndex, event.lastLogTerm);
-
-        if (voteGranted) {
-          this.persistent.votedFor = event.candidateId;
-          this.storage.setRaftNodeState(this.persistent);
-          this.electionTimer.reset();
-        }
-
-        this.network.send(event.from, {
-          type: "request-vote-response",
-          from: this.volatile.nodeId,
-          term: this.persistent.term,
-          voteGranted,
-        });
+        this.handleRequestVote(event as RequestVoteEvent);
         break;
       }
 
       case "request-vote-response": {
-        if (
-          event.term !== this.persistent.term ||
-          this.volatile.role !== "candidate"
-        ) {
-          return;
-        }
-
-        if (event.voteGranted) {
-          this.votes.add(event.from);
-          if (this.votes.size > this.volatile.nodeIds.length / 2) {
-            this.becomeLeader();
-          }
-        }
+        this.handleRequestVoteResponse(event as RequestVoteResponseEvent);
         break;
       }
 
       case "append-entries": {
-        if (event.term < this.persistent.term) {
-          this.network.send(event.from, {
-            type: "append-entries-response",
-            from: this.volatile.nodeId,
-            term: this.persistent.term,
-            success: false,
-            matchIndex: this.volatile.commitIndex,
-          });
-          return;
-        }
-
-        if (event.term > this.persistent.term) {
-          this.persistent.term = event.term;
-          this.persistent.votedFor = null;
-          this.volatile.role = "follower";
-          this.storage.setRaftNodeState(this.persistent);
-        }
-
-        this.electionTimer.reset();
-
-        const success = this.appendEntries(
-          event.prevLogIndex,
-          event.prevLogTerm,
-          event.entries
-        );
-
-        if (success && event.leaderCommit > this.volatile.commitIndex) {
-          this.volatile.commitIndex = Math.min(
-            event.leaderCommit,
-            this.persistent.log.length - 1
-          );
-          this.applyCommittedEntries();
-        }
-
-        this.network.send(event.from, {
-          type: "append-entries-response",
-          from: this.volatile.nodeId,
-          term: this.persistent.term,
-          success,
-          matchIndex: success
-            ? event.prevLogIndex + event.entries.length
-            : this.volatile.commitIndex,
-        });
+        this.handleAppendEntries(event as AppendEntriesEvent);
         break;
       }
     }
   }
 
-  private isLogUpToDate(
-    candidateLastLogIndex: number,
-    candidateLastLogTerm: number
-  ): boolean {
-    const lastLogIndex = this.persistent.log.length - 1;
-    const lastLogTerm =
-      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
-
-    return (
-      candidateLastLogTerm > lastLogTerm ||
-      (candidateLastLogTerm === lastLogTerm &&
-        candidateLastLogIndex >= lastLogIndex)
-    );
+  private handleHeartbeatTimeout(): void {
+    if (this.volatile.role === "leader") {
+      this.sendHeartbeats();
+    }
   }
 
-  private startElection(): void {
+  private handleElectionTimeout(): void {
+    if (this.volatile.role == "leader") return;
+
     info(`${this.volatile.nodeId} start election`);
 
-    this.persistent.term++;
-    this.persistent.votedFor = this.volatile.nodeId;
+    // Become a candidate
     this.volatile.role = "candidate";
-    this.storage.setRaftNodeState(this.persistent);
 
+    // Increase term
+    this.persistent.term++;
+
+    // Vote for self
+    this.persistent.votedFor = this.volatile.nodeId;
     this.votes = new Set([this.volatile.nodeId]);
+    this.storage.setRaftNodeState(this.persistent);
 
     const lastLogIndex = this.persistent.log.length - 1;
     const lastLogTerm =
@@ -261,7 +164,72 @@ export class RaftNode {
     this.electionTimer.reset();
   }
 
-  private becomeLeader(): void {
+  private handleHeartbeat(event: HeartbeatEvent): void {
+    if (event.term < this.persistent.term) {
+      return;
+    }
+
+    if (event.term > this.persistent.term) {
+      this.persistent.term = event.term;
+      this.persistent.votedFor = null;
+      this.volatile.role = "follower";
+      this.storage.setRaftNodeState(this.persistent);
+    }
+
+    this.electionTimer.reset();
+  }
+
+  private handleRequestVote(event: RequestVoteEvent): void {
+    if (event.term < this.persistent.term) {
+      this.network.send(event.from, {
+        type: "request-vote-response",
+        from: this.volatile.nodeId,
+        term: this.persistent.term,
+        voteGranted: false,
+      });
+      return;
+    }
+
+    if (event.term > this.persistent.term) {
+      this.persistent.term = event.term;
+      this.persistent.votedFor = null;
+      this.volatile.role = "follower";
+      this.storage.setRaftNodeState(this.persistent);
+    }
+
+    const voteGranted =
+      (this.persistent.votedFor === null ||
+        this.persistent.votedFor === event.candidateId) &&
+      this.isLogUpToDate(event.lastLogIndex, event.lastLogTerm);
+
+    if (voteGranted) {
+      this.persistent.votedFor = event.candidateId;
+      this.storage.setRaftNodeState(this.persistent);
+      this.electionTimer.reset();
+    }
+
+    this.network.send(event.from, {
+      type: "request-vote-response",
+      from: this.volatile.nodeId,
+      term: this.persistent.term,
+      voteGranted,
+    });
+  }
+
+  private handleRequestVoteResponse(event: RequestVoteResponseEvent): void {
+    if (
+      event.term !== this.persistent.term ||
+      this.volatile.role !== "candidate"
+    ) {
+      return;
+    }
+
+    if (!event.voteGranted) return;
+
+    this.votes.add(event.from);
+
+    if (this.votes.size <= this.volatile.nodeIds.length / 2) return;
+
     info(`${this.volatile.nodeId} become leader`);
 
     this.volatile.role = "leader";
@@ -276,6 +244,67 @@ export class RaftNode {
     }
 
     this.sendHeartbeats();
+  }
+
+  private handleAppendEntries(event: AppendEntriesEvent): void {
+    if (event.term < this.persistent.term) {
+      this.network.send(event.from, {
+        type: "append-entries-response",
+        from: this.volatile.nodeId,
+        term: this.persistent.term,
+        success: false,
+        matchIndex: this.volatile.commitIndex,
+      });
+      return;
+    }
+
+    if (event.term > this.persistent.term) {
+      this.persistent.term = event.term;
+      this.persistent.votedFor = null;
+      this.volatile.role = "follower";
+      this.storage.setRaftNodeState(this.persistent);
+    }
+
+    this.electionTimer.reset();
+
+    const success = this.appendEntries(
+      event.prevLogIndex,
+      event.prevLogTerm,
+      event.entries
+    );
+
+    if (success && event.leaderCommit > this.volatile.commitIndex) {
+      this.volatile.commitIndex = Math.min(
+        event.leaderCommit,
+        this.persistent.log.length - 1
+      );
+      this.applyCommittedEntries();
+    }
+
+    this.network.send(event.from, {
+      type: "append-entries-response",
+      from: this.volatile.nodeId,
+      term: this.persistent.term,
+      success,
+      matchIndex: success
+        ? event.prevLogIndex + event.entries.length
+        : this.volatile.commitIndex,
+    });
+  }
+
+  private isLogUpToDate(
+    candidateLastLogIndex: number,
+    candidateLastLogTerm: number
+  ): boolean {
+    const lastLogIndex = this.persistent.log.length - 1;
+    const lastLogTerm =
+      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
+
+    return (
+      candidateLastLogTerm > lastLogTerm ||
+      (candidateLastLogTerm === lastLogTerm &&
+        candidateLastLogIndex >= lastLogIndex)
+    );
   }
 
   private sendHeartbeats(): void {

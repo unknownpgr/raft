@@ -25,47 +25,61 @@ export type VolatileState = {
   matchIndex: Record<string, number>;
 };
 
+export interface HeartbeatEvent {
+  type: "heartbeat";
+  from: string;
+  term: number;
+  leaderId: string;
+}
+
+export interface RequestVoteEvent {
+  type: "request-vote";
+  from: string;
+  term: number;
+  candidateId: string;
+  lastLogIndex: number;
+  lastLogTerm: number;
+}
+
+export interface RequestVoteResponseEvent {
+  type: "request-vote-response";
+  from: string;
+  term: number;
+  voteGranted: boolean;
+}
+
+export interface AppendEntriesEvent {
+  type: "append-entries";
+  from: string;
+  term: number;
+  leaderId: string;
+  prevLogIndex: number;
+  prevLogTerm: number;
+  entries: LogEntry[];
+  leaderCommit: number;
+}
+
+export interface AppendEntriesResponseEvent {
+  type: "append-entries-response";
+  from: string;
+  term: number;
+  success: boolean;
+  matchIndex: number;
+}
+
+export interface HeartbeatTimeoutEvent {
+  type: "heartbeat-timeout";
+}
+
+export interface ElectionTimeoutEvent {
+  type: "election-timeout";
+}
+
 export type RaftEvent =
-  | {
-      type: "heartbeat";
-      from: string;
-      term: number;
-      leaderId: string;
-    }
-  | {
-      type: "request-vote";
-      from: string;
-      term: number;
-      candidateId: string;
-      lastLogIndex: number;
-      lastLogTerm: number;
-    }
-  | {
-      type: "request-vote-response";
-      from: string;
-      term: number;
-      voteGranted: boolean;
-    }
-  | {
-      type: "append-entries";
-      from: string;
-      term: number;
-      leaderId: string;
-      prevLogIndex: number;
-      prevLogTerm: number;
-      entries: LogEntry[];
-      leaderCommit: number;
-    }
-  | {
-      type: "append-entries-response";
-      from: string;
-      term: number;
-      success: boolean;
-      matchIndex: number;
-    }
-  | {
-      type: "heartbeat-timeout";
-    }
-  | {
-      type: "election-timeout";
-    };
+  | HeartbeatEvent
+  | RequestVoteEvent
+  | RequestVoteResponseEvent
+  | AppendEntriesEvent
+  | AppendEntriesResponseEvent
+  | HeartbeatTimeoutEvent
+  | ElectionTimeoutEvent;
