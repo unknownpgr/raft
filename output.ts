@@ -2,7 +2,8 @@ const startTime: number = Date.now();
 function log(message: string): void {
   const now = Date.now();
   const time = (now - startTime) / 1000;
-  console.log(`[+${time}] ${message}`);
+  const timeString = time.toFixed(3);
+  console.log(`[+${timeString}] ${message}`);
 }
 
 export function info(message: string): void {
