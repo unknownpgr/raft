@@ -5,6 +5,7 @@ import {
   RaftNetwork,
   StateMachine,
 } from "./interfaces";
+import { info } from "./output";
 import { PersistentState, VolatileState, LogEntry, RaftEvent } from "./types";
 
 export class RaftNode {
@@ -231,6 +232,8 @@ export class RaftNode {
   }
 
   private startElection(): void {
+    info(`${this.volatile.nodeId} start election`);
+
     this.persistent.term++;
     this.persistent.votedFor = this.volatile.nodeId;
     this.volatile.role = "candidate";
@@ -259,6 +262,8 @@ export class RaftNode {
   }
 
   private becomeLeader(): void {
+    info(`${this.volatile.nodeId} become leader`);
+
     this.volatile.role = "leader";
     this.electionTimer.stop();
     this.heartbeatTimer.start();
