@@ -12,13 +12,7 @@ export class MockRaftNetwork implements RaftNetwork {
 
   send(to: string, message: RaftEvent): void {
     setTimeout(() => {
-      info(
-        `${(message as any).from} ==> ${to}, message: ${JSON.stringify(
-          message,
-          null,
-          2
-        )}`
-      );
+      info(`${(message as any).from} ==> ${to}, message: ${message.type}`);
 
       const callback = this.nodes.get(to);
       if (callback) {

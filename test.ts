@@ -11,6 +11,7 @@ import { MockPersistentStorage } from "./mockPersistentStorage";
 import { RaftNode } from "./raft";
 import { MockRaftNetwork } from "./mockRaftNetwork";
 import { MockElectionTimer } from "./mockElectionTimer";
+import { info } from "./output";
 
 type RaftUnit = {
   node: RaftNode;
@@ -22,7 +23,7 @@ type RaftUnit = {
 
 type RaftCluster = {
   units: RaftUnit[];
-  network: RaftNetwork;
+  network: MockRaftNetwork;
 };
 
 function createRaftCluster(nodeIds: string[]): RaftCluster {
@@ -46,9 +47,50 @@ function createRaftCluster(nodeIds: string[]): RaftCluster {
   return { units, network };
 }
 
-function main() {
+function kill(cluster: RaftCluster, nodeId: string): void {
+  const unit = cluster.units.find((unit) => unit.node.getNodeId() === nodeId);
+  if (unit) {
+    unit.electionTimer.stop();
+    unit.heartbeatTimer.stop();
+    cluster.network.unbind(nodeId);
+  }
+}
+
+function revive(cluster: RaftCluster, nodeId: string): void {
+  const unit = cluster.units.find((unit) => unit.node.getNodeId() === nodeId);
+  const nodeIds = cluster.units.map((unit) => unit.node.getNodeId());
+  if (unit) {
+    unit.node = new RaftNode(
+      nodeId,
+      nodeIds,
+      unit.storage, // Keep the same storage
+      new MockStateMachine(),
+      cluster.network,
+      new MockElectionTimer(),
+      new MockHeartbeatTimer()
+    );
+  }
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function main() {
   const nodeIds = ["A", "B", "C"];
   const cluster = createRaftCluster(nodeIds);
+
+  await sleep(10000);
+  kill(cluster, "A");
+  kill(cluster, "B");
+  kill(cluster, "C");
+  info("All nodes are dead");
+
+  await sleep(10000);
+  revive(cluster, "A");
+  revive(cluster, "B");
+  revive(cluster, "C");
+  info("All nodes are revived");
 }
 
 main();
