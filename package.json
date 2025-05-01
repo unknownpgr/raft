@@ -4,7 +4,7 @@
   "description": "Raft consensus algorithm implementation",
   "main": "raft.ts",
   "scripts": {
-    "test": "jest"
+    "test": "ts-node test.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
