@@ -15,6 +15,8 @@ import {
   RequestVoteEvent,
   RequestVoteResponseEvent,
   AppendEntriesEvent,
+  ClientQueryEvent,
+  ClientRequestEvent,
 } from "./types";
 
 export class RaftNode {
@@ -117,6 +119,16 @@ export class RaftNode {
 
       case "append-entries": {
         this.handleAppendEntries(event as AppendEntriesEvent);
+        break;
+      }
+
+      case "client-query": {
+        this.handleClientQuery(event as ClientQueryEvent);
+        break;
+      }
+
+      case "client-request": {
+        this.handleClientRequest(event as ClientRequestEvent);
         break;
       }
     }
@@ -361,5 +373,42 @@ export class RaftNode {
       const entry = this.persistent.log[this.volatile.lastApplied];
       this.stateMachine.apply(entry.command);
     }
+  }
+
+  private handleClientQuery(event: ClientQueryEvent): void {
+    this.network.send(event.from, {
+      type: "client-query-response",
+      from: this.volatile.nodeId,
+      role: this.volatile.role,
+    });
+  }
+
+  private handleClientRequest(event: ClientRequestEvent): void {
+    if (this.volatile.role !== "leader") {
+      this.network.send(event.from, {
+        type: "client-request-response",
+        from: this.volatile.nodeId,
+        success: false,
+        error: "Not leader",
+      });
+      return;
+    }
+
+    // Add command to log
+    const entry: LogEntry = {
+      term: this.persistent.term,
+      command: event.command,
+    };
+    this.persistent.log.push(entry);
+    this.storage.setRaftNodeState(this.persistent);
+
+    // Send append entries to all followers
+    this.sendHeartbeats();
+
+    this.network.send(event.from, {
+      type: "client-request-response",
+      from: this.volatile.nodeId,
+      success: true,
+    });
   }
 }

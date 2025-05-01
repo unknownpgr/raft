@@ -75,6 +75,30 @@ export interface ElectionTimeoutEvent {
   type: "election-timeout";
 }
 
+export interface ClientQueryEvent {
+  type: "client-query";
+  from: string;
+}
+
+export interface ClientQueryResponseEvent {
+  type: "client-query-response";
+  from: string;
+  role: NodeRole;
+}
+
+export interface ClientRequestEvent {
+  type: "client-request";
+  from: string;
+  command: Command;
+}
+
+export interface ClientRequestResponseEvent {
+  type: "client-request-response";
+  from: string;
+  success: boolean;
+  error?: string;
+}
+
 export type RaftEvent =
   | HeartbeatEvent
   | RequestVoteEvent
@@ -82,4 +106,8 @@ export type RaftEvent =
   | AppendEntriesEvent
   | AppendEntriesResponseEvent
   | HeartbeatTimeoutEvent
-  | ElectionTimeoutEvent;
+  | ElectionTimeoutEvent
+  | ClientQueryEvent
+  | ClientQueryResponseEvent
+  | ClientRequestEvent
+  | ClientRequestResponseEvent;
