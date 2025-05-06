@@ -1,4 +1,4 @@
-import { ElectionTimer } from "./interfaces";
+import { ElectionTimer } from "../core/interfaces";
 
 export class MockElectionTimer implements ElectionTimer {
   private callback: (() => void) | null = null;

@@ -5,7 +5,7 @@ import {
   RaftNetwork,
   StateMachine,
 } from "./interfaces";
-import { info } from "./output";
+import { info } from "./logger";
 import {
   PersistentState,
   VolatileState,

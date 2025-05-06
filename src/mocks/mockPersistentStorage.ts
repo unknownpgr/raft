@@ -1,5 +1,5 @@
-import { PersistentStorage } from "./interfaces";
-import { PersistentState } from "./types";
+import { PersistentStorage } from "../core/interfaces";
+import { PersistentState } from "../core/types";
 export class MockPersistentStorage implements PersistentStorage {
   private state: PersistentState | null = null;
 

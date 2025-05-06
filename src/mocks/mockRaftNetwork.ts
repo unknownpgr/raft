@@ -1,6 +1,6 @@
-import { RaftNetwork } from "./interfaces";
-import { info } from "./output";
-import { RaftEvent } from "./types";
+import { RaftNetwork } from "../core/interfaces";
+import { info } from "../core/logger";
+import { RaftEvent } from "../core/types";
 
 export class MockRaftNetwork implements RaftNetwork {
   private nodes: Map<string, (message: RaftEvent) => void> = new Map();

@@ -1,5 +1,5 @@
-import { Command } from "./types";
-import { StateMachine } from "./interfaces";
+import { Command } from "../core/types";
+import { StateMachine } from "../core/interfaces";
 
 export class MockStateMachine implements StateMachine {
   private commands: Command[] = [];

@@ -1,4 +1,4 @@
-import { HeartbeatTimer } from "./interfaces";
+import { HeartbeatTimer } from "../core/interfaces";
 
 export class MockHeartbeatTimer implements HeartbeatTimer {
   private callback: (() => void) | null = null;

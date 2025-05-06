@@ -1,18 +1,18 @@
-import { HeartbeatTimer, ElectionTimer, StateMachine } from "./interfaces";
-import { PersistentStorage } from "./interfaces";
-import { MockStateMachine } from "./mockStateMachine";
-import { MockHeartbeatTimer } from "./mockHeartbeatTimer";
-import { MockPersistentStorage } from "./mockPersistentStorage";
-import { RaftNode } from "./raft";
-import { MockRaftNetwork } from "./mockRaftNetwork";
-import { MockElectionTimer } from "./mockElectionTimer";
-import { info } from "./output";
+import { HeartbeatTimer, ElectionTimer, StateMachine } from "./core/interfaces";
+import { PersistentStorage } from "./core/interfaces";
+import { MockStateMachine } from "./mocks/mockStateMachine";
+import { MockHeartbeatTimer } from "./mocks/mockHeartbeatTimer";
+import { MockPersistentStorage } from "./mocks/mockPersistentStorage";
+import { RaftNode } from "./core/raft";
+import { MockRaftNetwork } from "./mocks/mockRaftNetwork";
+import { MockElectionTimer } from "./mocks/mockElectionTimer";
+import { info } from "./core/logger";
 import {
   ClientQueryEvent,
   ClientQueryResponseEvent,
   ClientRequestResponseEvent,
   Command,
-} from "./types";
+} from "./core/types";
 
 type RaftUnit = {
   isAlive: boolean;
