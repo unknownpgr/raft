@@ -2,22 +2,40 @@
 > raft@1.0.0 test
 > ts-node src/test.ts
 
-[+0.014] [INFO] bind: A
-[+0.015] [INFO] bind: B
-[+0.015] [INFO] bind: C
-
-// Check the role of all nodes
-
-[+0.016] [INFO] bind: CLIENT-L7V50Y
-[+0.016] [INFO] bind: CLIENT-36WM0V
-[+0.016] [INFO] bind: CLIENT-Q0P4N5
-[+0.116] [INFO] CLIENT-L7V50Y ==> A, message: client-query
-[+0.117] [INFO] CLIENT-36WM0V ==> B, message: client-query
-[+0.117] [INFO] CLIENT-Q0P4N5 ==> C, message: client-query
-[+0.217] [INFO] A ==> CLIENT-L7V50Y, message: client-query-response
-[+0.218] [INFO] B ==> CLIENT-36WM0V, message: client-query-response
-[+0.218] [INFO] C ==> CLIENT-Q0P4N5, message: client-query-response
-[+0.219] [INFO] [
+[+0.015] [INFO] bind: A
+[+0.016] [INFO] bind: B
+[+0.016] [INFO] bind: C
+[+0.016] [INFO] bind: CLIENT-QPNG9P
+[+0.017] [INFO] bind: CLIENT-8I0HAY
+[+0.017] [INFO] bind: CLIENT-95KSPB
+[+0.119] [INFO] CLIENT-QPNG9P ==> A, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-QPNG9P"
+}
+[+0.119] [INFO] CLIENT-8I0HAY ==> B, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-8I0HAY"
+}
+[+0.119] [INFO] CLIENT-95KSPB ==> C, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-95KSPB"
+}
+[+0.219] [INFO] A ==> CLIENT-QPNG9P, type: client-query-response {
+  "type": "client-query-response",
+  "from": "A",
+  "role": "follower"
+}
+[+0.220] [INFO] B ==> CLIENT-8I0HAY, type: client-query-response {
+  "type": "client-query-response",
+  "from": "B",
+  "role": "follower"
+}
+[+0.220] [INFO] C ==> CLIENT-95KSPB, type: client-query-response {
+  "type": "client-query-response",
+  "from": "C",
+  "role": "follower"
+}
+[+0.220] [INFO] [
   {
     "type": "client-query-response",
     "from": "A",
@@ -34,299 +52,1077 @@
     "role": "follower"
   }
 ]
-
-// Every node is a follower at start
-
-[+1.535] [INFO] B start election
-[+1.568] [INFO] A start election
-
-// A and B start election at almost the same time.
-// Even though B started election earlier, because of network delay, A started election before receiving request-vote from B.
-
-[+1.636] [INFO] B ==> A, message: request-vote
-[+1.637] [INFO] B ==> C, message: request-vote
-[+1.668] [INFO] A ==> B, message: request-vote
-[+1.669] [INFO] A ==> C, message: request-vote
-
-// A and B both sends request-vote to other nodes.
-
-[+1.737] [INFO] A ==> B, message: request-vote-response
-[+1.737] [INFO] C ==> B, message: request-vote-response
-
-// Because C voted to B, B got majority of votes, (2/3) and become leader.
-
-[+1.737] [INFO] B become leader
-
-[+1.768] [INFO] B ==> A, message: request-vote-response
-[+1.770] [INFO] C ==> A, message: request-vote-response
-
-// Later, because of network delay, response from B and C to A is received, but because it is not majority, A is still a follower.
-
-[+1.839] [INFO] B ==> A, message: append-entries
-[+1.839] [INFO] B ==> C, message: append-entries
-[+1.940] [INFO] A ==> B, message: append-entries-response
-[+1.940] [INFO] C ==> B, message: append-entries-response
-
-// B sends heartbeat to A and C. and it repeats.
-
-[+2.839] [INFO] B ==> A, message: append-entries
-[+2.839] [INFO] B ==> C, message: append-entries
-[+2.939] [INFO] A ==> B, message: append-entries-response
-[+2.940] [INFO] C ==> B, message: append-entries-response
-[+3.840] [INFO] B ==> A, message: append-entries
-[+3.840] [INFO] B ==> C, message: append-entries
-[+3.940] [INFO] A ==> B, message: append-entries-response
-[+3.941] [INFO] C ==> B, message: append-entries-response
-[+4.841] [INFO] B ==> A, message: append-entries
-[+4.841] [INFO] B ==> C, message: append-entries
-[+4.942] [INFO] A ==> B, message: append-entries-response
-[+4.942] [INFO] C ==> B, message: append-entries-response
-
-// Client queries are sent to all nodes.
-
-[+5.219] [INFO] bind: CLIENT-7K90SQ
-[+5.219] [INFO] bind: CLIENT-M9FNHL
-[+5.219] [INFO] bind: CLIENT-ACUGZ6
-[+5.319] [INFO] CLIENT-7K90SQ ==> A, message: client-query
-[+5.319] [INFO] CLIENT-M9FNHL ==> B, message: client-query
-[+5.319] [INFO] CLIENT-ACUGZ6 ==> C, message: client-query
-[+5.419] [INFO] A ==> CLIENT-7K90SQ, message: client-query-response
-[+5.420] [INFO] B ==> CLIENT-M9FNHL, message: client-query-response
-[+5.420] [INFO] C ==> CLIENT-ACUGZ6, message: client-query-response
-
-// Now client knows the leader is B.
-
-[+5.420] [INFO] Leader is B
-[+5.841] [INFO] B ==> A, message: append-entries
-[+5.841] [INFO] B ==> C, message: append-entries
-[+5.942] [INFO] A ==> B, message: append-entries-response
-[+5.942] [INFO] C ==> B, message: append-entries-response
-[+6.842] [INFO] B ==> A, message: append-entries
-[+6.842] [INFO] B ==> C, message: append-entries
-[+6.942] [INFO] A ==> B, message: append-entries-response
-[+6.943] [INFO] C ==> B, message: append-entries-response
-
-// Client sends request to B.
-
-[+7.422] [INFO] bind: CLIENT-WTNUBL
-[+7.523] [INFO] CLIENT-WTNUBL ==> B, message: client-request
-
-// B appends the request to its log and sends it to A and C.
-
-[+7.622] [INFO] B ==> A, message: append-entries
-[+7.623] [INFO] B ==> C, message: append-entries
-[+7.623] [INFO] B ==> CLIENT-WTNUBL, message: client-request-response
-[+7.623] [INFO] {
+[+1.614] [INFO] A start election
+[+1.714] [INFO] A ==> B, type: request-vote {
+  "type": "request-vote",
+  "from": "A",
+  "term": 1,
+  "candidateId": "A",
+  "lastLogIndex": -1,
+  "lastLogTerm": 0
+}
+[+1.715] [INFO] A ==> C, type: request-vote {
+  "type": "request-vote",
+  "from": "A",
+  "term": 1,
+  "candidateId": "A",
+  "lastLogIndex": -1,
+  "lastLogTerm": 0
+}
+[+1.815] [INFO] B ==> A, type: request-vote-response {
+  "type": "request-vote-response",
+  "from": "B",
+  "term": 1,
+  "voteGranted": true
+}
+[+1.816] [INFO] A become leader
+[+1.818] [INFO] C ==> A, type: request-vote-response {
+  "type": "request-vote-response",
+  "from": "C",
+  "term": 1,
+  "voteGranted": true
+}
+[+1.917] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+1.918] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+2.018] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+2.019] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+2.917] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+2.917] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+3.018] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+3.018] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+3.918] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+3.918] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+4.018] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+4.025] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+4.919] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+4.919] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+5.020] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+5.020] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+5.221] [INFO] bind: CLIENT-S749IC
+[+5.221] [INFO] bind: CLIENT-GTZ4CK
+[+5.221] [INFO] bind: CLIENT-M21Q3Z
+[+5.320] [INFO] CLIENT-S749IC ==> A, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-S749IC"
+}
+[+5.321] [INFO] CLIENT-GTZ4CK ==> B, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-GTZ4CK"
+}
+[+5.321] [INFO] CLIENT-M21Q3Z ==> C, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-M21Q3Z"
+}
+[+5.421] [INFO] A ==> CLIENT-S749IC, type: client-query-response {
+  "type": "client-query-response",
+  "from": "A",
+  "role": "leader"
+}
+[+5.421] [INFO] B ==> CLIENT-GTZ4CK, type: client-query-response {
+  "type": "client-query-response",
+  "from": "B",
+  "role": "follower"
+}
+[+5.422] [INFO] C ==> CLIENT-M21Q3Z, type: client-query-response {
+  "type": "client-query-response",
+  "from": "C",
+  "role": "follower"
+}
+[+5.422] [INFO] Leader is A
+[+5.920] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+5.920] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+6.021] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+6.021] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+6.921] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+6.921] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [],
+  "leaderCommit": -1
+}
+[+7.022] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+7.022] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": -1
+}
+[+7.423] [INFO] bind: CLIENT-L8FUKW
+[+7.523] [INFO] CLIENT-L8FUKW ==> A, type: client-request {
+  "type": "client-request",
+  "from": "CLIENT-L8FUKW",
+  "command": "Event1"
+}
+[+7.624] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [
+    {
+      "term": 1,
+      "command": "Event1"
+    }
+  ],
+  "leaderCommit": -1
+}
+[+7.624] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": -1,
+  "prevLogTerm": 0,
+  "entries": [
+    {
+      "term": 1,
+      "command": "Event1"
+    }
+  ],
+  "leaderCommit": -1
+}
+[+7.625] [INFO] A ==> CLIENT-L8FUKW, type: client-request-response {
+  "type": "client-request-response",
+  "from": "A",
+  "success": true
+}
+[+7.625] [INFO] {
+  "type": "client-request-response",
+  "from": "A",
+  "success": true
+}
+[+7.725] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+7.725] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+7.726] [INFO] Committed on A
+[+7.921] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+7.922] [INFO] Committed on B
+[+7.922] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+7.922] [INFO] Committed on C
+[+8.022] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+8.023] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+8.922] [INFO] A ==> B, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+8.922] [INFO] A ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "A",
+  "term": 1,
+  "leaderId": "A",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+9.023] [INFO] B ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "B",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+9.027] [INFO] C ==> A, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 1,
+  "success": true,
+  "matchIndex": 0
+}
+[+9.626] [INFO] A is dead
+[+11.300] [INFO] B start election
+[+11.400] [INFO] B ==> A, type: request-vote {
+  "type": "request-vote",
+  "from": "B",
+  "term": 2,
+  "candidateId": "B",
+  "lastLogIndex": 0,
+  "lastLogTerm": 1
+}
+[+11.401] [INFO] B ==> C, type: request-vote {
+  "type": "request-vote",
+  "from": "B",
+  "term": 2,
+  "candidateId": "B",
+  "lastLogIndex": 0,
+  "lastLogTerm": 1
+}
+[+11.501] [INFO] C ==> B, type: request-vote-response {
+  "type": "request-vote-response",
+  "from": "C",
+  "term": 2,
+  "voteGranted": true
+}
+[+11.501] [INFO] B become leader
+[+11.602] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+11.602] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+11.702] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 0
+}
+[+12.603] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+12.603] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+12.703] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 0
+}
+[+13.604] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+13.604] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+13.704] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 0
+}
+[+14.605] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+14.605] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+14.626] [INFO] bind: CLIENT-E34RWJ
+[+14.626] [INFO] bind: CLIENT-HUW7G4
+[+14.706] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 0
+}
+[+14.726] [INFO] CLIENT-E34RWJ ==> B, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-E34RWJ"
+}
+[+14.726] [INFO] CLIENT-HUW7G4 ==> C, type: client-query {
+  "type": "client-query",
+  "from": "CLIENT-HUW7G4"
+}
+[+14.826] [INFO] B ==> CLIENT-E34RWJ, type: client-query-response {
+  "type": "client-query-response",
+  "from": "B",
+  "role": "leader"
+}
+[+14.827] [INFO] C ==> CLIENT-HUW7G4, type: client-query-response {
+  "type": "client-query-response",
+  "from": "C",
+  "role": "follower"
+}
+[+14.827] [INFO] New leader is B
+[+14.827] [INFO] bind: CLIENT-NRD81X
+[+14.927] [INFO] CLIENT-NRD81X ==> B, type: client-request {
+  "type": "client-request",
+  "from": "CLIENT-NRD81X",
+  "command": "Event2"
+}
+[+15.028] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+15.028] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+15.028] [INFO] B ==> CLIENT-NRD81X, type: client-request-response {
   "type": "client-request-response",
   "from": "B",
   "success": true
 }
-[+7.723] [INFO] A ==> B, message: append-entries-response
-[+7.723] [INFO] C ==> B, message: append-entries-response
-[+7.841] [INFO] B ==> A, message: append-entries
-[+7.842] [INFO] B ==> C, message: append-entries
-[+7.942] [INFO] A ==> B, message: append-entries-response
-[+7.942] [INFO] C ==> B, message: append-entries-response
-[+8.842] [INFO] B ==> A, message: append-entries
-[+8.842] [INFO] B ==> C, message: append-entries
-[+8.942] [INFO] A ==> B, message: append-entries-response
-[+8.943] [INFO] C ==> B, message: append-entries-response
-
-// Kill B for testing.
-
-[+9.624] [INFO] B is dead
-
-// A and C start election.
-
-[+10.441] [INFO] C start election
-[+10.447] [INFO] A start election
-[+10.541] [INFO] C ==> A, message: request-vote
-[+10.541] [INFO] C ==> B, message: request-vote
-[+10.548] [INFO] A ==> B, message: request-vote
-[+10.548] [INFO] A ==> C, message: request-vote
-[+10.641] [INFO] A ==> C, message: request-vote-response
-[+10.650] [INFO] C ==> A, message: request-vote-response
-
-// Because both A and C voted for each other, neither of them can become leader.
-// And because of the random election timer, A started election before C.
-
-[+11.963] [INFO] A start election
-[+12.064] [INFO] A ==> B, message: request-vote
-[+12.064] [INFO] A ==> C, message: request-vote
-[+12.164] [INFO] C ==> A, message: request-vote-response
-
-// Now A got majority of votes, (2/2) and become leader.
-
-[+12.165] [INFO] A become leader
-[+12.265] [INFO] A ==> B, message: append-entries
-[+12.265] [INFO] A ==> C, message: append-entries
-[+12.366] [INFO] C ==> A, message: append-entries-response
-[+13.264] [INFO] A ==> B, message: append-entries
-[+13.265] [INFO] A ==> C, message: append-entries
-[+13.365] [INFO] C ==> A, message: append-entries-response
-[+14.265] [INFO] A ==> B, message: append-entries
-[+14.266] [INFO] A ==> C, message: append-entries
-[+14.366] [INFO] C ==> A, message: append-entries-response
-
-// Client queries are sent to all nodes.
-
-[+14.626] [INFO] bind: CLIENT-4HB7FR
-[+14.626] [INFO] bind: CLIENT-Q5OOKK
-[+14.726] [INFO] CLIENT-4HB7FR ==> A, message: client-query
-[+14.727] [INFO] CLIENT-Q5OOKK ==> C, message: client-query
-[+14.827] [INFO] A ==> CLIENT-4HB7FR, message: client-query-response
-[+14.827] [INFO] C ==> CLIENT-Q5OOKK, message: client-query-response
-
-// Now client knows the leader is A.
-
-[+14.827] [INFO] New leader is A
-
-// Client sends several requests to A.
-
-[+14.928] [INFO] bind: CLIENT-0U8QQC
-[+14.928] [INFO] CLIENT-0U8QQC ==> A, message: client-request
-[+15.028] [INFO] A ==> B, message: append-entries
-[+15.028] [INFO] A ==> C, message: append-entries
-[+15.028] [INFO] A ==> CLIENT-0U8QQC, message: client-request-response
-[+15.129] [INFO] C ==> A, message: append-entries-response
-[+15.266] [INFO] A ==> B, message: append-entries
-[+15.266] [INFO] A ==> C, message: append-entries
-[+15.366] [INFO] C ==> A, message: append-entries-response
-[+16.266] [INFO] A ==> B, message: append-entries
-[+16.267] [INFO] A ==> C, message: append-entries
-[+16.367] [INFO] C ==> A, message: append-entries-response
-[+17.029] [INFO] bind: CLIENT-LZLY3C
-[+17.130] [INFO] CLIENT-LZLY3C ==> A, message: client-request
-[+17.231] [INFO] A ==> B, message: append-entries
-[+17.231] [INFO] A ==> C, message: append-entries
-[+17.231] [INFO] A ==> CLIENT-LZLY3C, message: client-request-response
-[+17.266] [INFO] A ==> B, message: append-entries
-[+17.267] [INFO] A ==> C, message: append-entries
-[+17.331] [INFO] C ==> A, message: append-entries-response
-[+17.366] [INFO] C ==> A, message: append-entries-response
-[+18.268] [INFO] A ==> B, message: append-entries
-[+18.268] [INFO] A ==> C, message: append-entries
-[+18.369] [INFO] C ==> A, message: append-entries-response
-[+19.232] [INFO] bind: CLIENT-JTAJBK
-[+19.269] [INFO] A ==> B, message: append-entries
-[+19.269] [INFO] A ==> C, message: append-entries
-[+19.332] [INFO] CLIENT-JTAJBK ==> A, message: client-request
-[+19.369] [INFO] C ==> A, message: append-entries-response
-[+19.433] [INFO] A ==> B, message: append-entries
-[+19.434] [INFO] A ==> C, message: append-entries
-[+19.434] [INFO] A ==> CLIENT-JTAJBK, message: client-request-response
-[+19.534] [INFO] C ==> A, message: append-entries-response
-[+20.269] [INFO] A ==> B, message: append-entries
-[+20.269] [INFO] A ==> C, message: append-entries
-[+20.370] [INFO] C ==> A, message: append-entries-response
-[+21.270] [INFO] A ==> B, message: append-entries
-[+21.270] [INFO] A ==> C, message: append-entries
-[+21.370] [INFO] C ==> A, message: append-entries-response
-
-// Check the state of all nodes.
-// All live nodes (A,C) have same state, but B still has only 1 log entry.
-
-[+21.434] [INFO] {
-  "term": 3,
+[+15.128] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 1
+}
+[+15.604] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+15.606] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 1,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+15.706] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 1
+}
+[+16.605] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+16.606] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 1,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+16.706] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 1
+}
+[+17.028] [INFO] bind: CLIENT-7RRJU9
+[+17.129] [INFO] CLIENT-7RRJU9 ==> B, type: client-request {
+  "type": "client-request",
+  "from": "CLIENT-7RRJU9",
+  "command": "Event3"
+}
+[+17.229] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+17.230] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 1,
+  "prevLogTerm": 2,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event3"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+17.230] [INFO] B ==> CLIENT-7RRJU9, type: client-request-response {
+  "type": "client-request-response",
+  "from": "B",
+  "success": true
+}
+[+17.330] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 2
+}
+[+17.605] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+17.605] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 2,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+17.705] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 2
+}
+[+18.606] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+18.606] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 2,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+18.707] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 2
+}
+[+19.230] [INFO] bind: CLIENT-HZKENA
+[+19.331] [INFO] CLIENT-HZKENA ==> B, type: client-request {
+  "type": "client-request",
+  "from": "CLIENT-HZKENA",
+  "command": "Event4"
+}
+[+19.430] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+19.432] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 2,
+  "prevLogTerm": 2,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+19.432] [INFO] B ==> CLIENT-HZKENA, type: client-request-response {
+  "type": "client-request-response",
+  "from": "B",
+  "success": true
+}
+[+19.532] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+19.606] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+19.606] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 2,
+  "prevLogTerm": 2,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+19.707] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+20.607] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+20.607] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 3,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+20.707] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+21.433] [INFO] {
+  "term": 1,
   "votedFor": "A",
   "log": [
     {
       "term": 1,
       "command": "Event1"
-    },
-    {
-      "term": 3,
-      "command": "Event2"
-    },
-    {
-      "term": 3,
-      "command": "Event3"
-    },
-    {
-      "term": 3,
-      "command": "Event4"
     }
   ]
 }
-[+21.434] [INFO] {
-  "term": 1,
+[+21.433] [INFO] {
+  "term": 2,
   "votedFor": "B",
   "log": [
     {
       "term": 1,
       "command": "Event1"
+    },
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
     }
   ]
 }
-[+21.434] [INFO] {
-  "term": 3,
-  "votedFor": "A",
+[+21.433] [INFO] {
+  "term": 2,
+  "votedFor": "B",
   "log": [
     {
       "term": 1,
       "command": "Event1"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event2"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event3"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event4"
     }
   ]
 }
-
-// Now revive B.
-
-[+21.434] [INFO] bind: B
-[+21.435] [INFO] B is revived
-
-// A sends heartbeat to B.
-
-[+22.271] [INFO] A ==> B, message: append-entries
-[+22.271] [INFO] A ==> C, message: append-entries
-
-// In this response, B detect log index mismatch and response with its log index and term.
-
-[+22.370] [INFO] B ==> A, message: append-entries-response
-[+22.372] [INFO] C ==> A, message: append-entries-response
-[+23.272] [INFO] A ==> B, message: append-entries
-[+23.273] [INFO] A ==> C, message: append-entries
-[+23.373] [INFO] B ==> A, message: append-entries-response
-[+23.373] [INFO] C ==> A, message: append-entries-response
+[+21.433] [INFO] bind: A
+[+21.433] [INFO] A is revived
+[+21.607] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 0,
+  "prevLogTerm": 1,
+  "entries": [
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ],
+  "leaderCommit": 0
+}
+[+21.607] [INFO] Committed on A
+[+21.607] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 3,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 0
+}
+[+21.708] [INFO] A ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "A",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+21.708] [INFO] Committed on B
+[+21.708] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+22.608] [INFO] B ==> A, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 3,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 3
+}
+[+22.608] [INFO] Committed on A
+[+22.608] [INFO] B ==> C, type: append-entries {
+  "type": "append-entries",
+  "from": "B",
+  "term": 2,
+  "leaderId": "B",
+  "prevLogIndex": 3,
+  "prevLogTerm": 2,
+  "entries": [],
+  "leaderCommit": 3
+}
+[+22.608] [INFO] Committed on C
+[+22.709] [INFO] A ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "A",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
+[+22.709] [INFO] C ==> B, type: append-entries-response {
+  "type": "append-entries-response",
+  "from": "C",
+  "term": 2,
+  "success": true,
+  "matchIndex": 3
+}
 [+23.435] [INFO] All nodes are dead
-
-// After killing all nodes, check the state of all nodes.
-
 [+23.435] [INFO] {
-  "term": 3,
-  "votedFor": "A",
-  "log": [
-    {
-      "term": 1,
-      "command": "Event1"
-    },
-    {
-      "term": 3,
-      "command": "Event2"
-    },
-    {
-      "term": 3,
-      "command": "Event3"
-    },
-    {
-      "term": 3,
-      "command": "Event4"
-    }
-  ]
-}
-[+23.435] [INFO] {
-  "term": 3,
+  "term": 2,
   "votedFor": null,
   "log": [
     {
@@ -334,40 +1130,60 @@
       "command": "Event1"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event2"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event3"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event4"
     }
   ]
 }
 [+23.435] [INFO] {
-  "term": 3,
-  "votedFor": "A",
+  "term": 2,
+  "votedFor": "B",
   "log": [
     {
       "term": 1,
       "command": "Event1"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event2"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event3"
     },
     {
-      "term": 3,
+      "term": 2,
       "command": "Event4"
     }
   ]
 }
-
-// Even though B has been dead for a while, it has the same state as A and C.
+[+23.435] [INFO] {
+  "term": 2,
+  "votedFor": "B",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 2,
+      "command": "Event2"
+    },
+    {
+      "term": 2,
+      "command": "Event3"
+    },
+    {
+      "term": 2,
+      "command": "Event4"
+    }
+  ]
+}
