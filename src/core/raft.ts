@@ -68,7 +68,12 @@ export class RaftNode {
     this.electionTimer = electionTimer;
     this.heartbeatTimer = heartbeatTimer;
 
-    // Setup nextIndex and matchIndex for all nodes
+    /**
+     * Section 5.3
+     * When a leader first comes to power,
+     * it initializes all nextIndex values to the index just after the
+     * last one in its log
+     */
     for (const nodeId of this.volatile.nodeIds) {
       this.volatile.nextIndex[nodeId] = this.persistent.log.length;
       this.volatile.matchIndex[nodeId] = -1;
@@ -87,27 +92,13 @@ export class RaftNode {
       })
     );
 
-    // Start election timer
+    // Start timers
     this.electionTimer.start();
+    this.heartbeatTimer.start();
   }
 
   public getNodeId(): string {
     return this.volatile.nodeId;
-  }
-
-  private isLogUpToDate(
-    candidateLastLogIndex: number,
-    candidateLastLogTerm: number
-  ): boolean {
-    const lastLogIndex = this.persistent.log.length - 1;
-    const lastLogTerm =
-      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
-
-    return (
-      candidateLastLogTerm > lastLogTerm ||
-      (candidateLastLogTerm === lastLogTerm &&
-        candidateLastLogIndex >= lastLogIndex)
-    );
   }
 
   private sendHeartbeats(): void {
@@ -119,6 +110,8 @@ export class RaftNode {
   }
 
   private sendAppendEntries(to: string): void {
+    // Section 5.3
+
     const prevLogIndex = this.volatile.nextIndex[to] - 1;
     const prevLogTerm =
       prevLogIndex >= 0 ? this.persistent.log[prevLogIndex].term : 0;
@@ -141,9 +134,17 @@ export class RaftNode {
     prevLogTerm: number,
     entries: LogEntry[]
   ): boolean {
+    /**
+     * Section 5.3
+     * ... If the follower does not find an entry in its log with the same index and term,
+     * then it refuses the new entries.
+     */
+
     if (
       prevLogIndex >= 0 &&
+      // If log of prevLogIndex does not exists
       (prevLogIndex >= this.persistent.log.length ||
+        // or log of prevLogIndex has different term
         this.persistent.log[prevLogIndex].term !== prevLogTerm)
     ) {
       return false;
@@ -159,6 +160,11 @@ export class RaftNode {
   }
 
   private applyCommittedEntries(): void {
+    /**
+     * Section 5, Rules for Servers
+     * If commitIndex > lastApplied: increment lastApplied, apply log[lastApplied] to state machine
+     */
+
     info(`Committed on ${this.volatile.nodeId}`);
     while (this.volatile.lastApplied < this.volatile.commitIndex) {
       this.volatile.lastApplied++;
@@ -226,18 +232,31 @@ export class RaftNode {
   private handleElectionTimeout(): void {
     if (this.volatile.role == "leader") return;
 
-    info(`${this.volatile.nodeId} start election`);
+    info(`${this.volatile.nodeId} started election`);
 
-    // Become a candidate
+    /**
+     * Section 5.3, Rules for Servers
+     * On conversion to candidate, start election:
+     * - Increment currentTerm
+     * - Vote for self
+     * - Reset election timer
+     * - Send RequestVote RPCs to all other servers
+     */
+
     this.volatile.role = "candidate";
-
-    // Increase term
     this.persistent.term++;
-
-    // Vote for self
     this.persistent.votedFor = this.volatile.nodeId;
     this.volatile.votes = new Set([this.volatile.nodeId]);
+    this.electionTimer.reset();
     this.storage.setRaftNodeState(this.persistent);
+
+    /**
+     * Section 5.4
+     * - lastLogIndex: index of candidate’s last log entry
+     * - lastLogTerm: term of candidate’s last log entry
+     *
+     *  NOTE: if log compaction (snapshotting) is used, lastLogIndex may not be same as this.persistent.log.length - 1.
+     */
 
     const lastLogIndex = this.persistent.log.length - 1;
     const lastLogTerm =
@@ -255,11 +274,11 @@ export class RaftNode {
         });
       }
     }
-
-    this.electionTimer.reset();
   }
 
   private handleRequestVote(event: RequestVoteEvent): void {
+    // Section 5.1
+    // If term is lower, return false
     if (event.term < this.persistent.term) {
       this.network.send(event.from, {
         type: "request-vote-response",
@@ -270,17 +289,37 @@ export class RaftNode {
       return;
     }
 
+    // Section 5, Rules for Servers
+    // If term is higher, update term and become follower
     if (event.term > this.persistent.term) {
       this.persistent.term = event.term;
       this.persistent.votedFor = null;
       this.volatile.role = "follower";
+      this.electionTimer.reset();
       this.storage.setRaftNodeState(this.persistent);
     }
+
+    /**
+     * Section 5, RequestVote RPC
+     * If votedFor is null or candidateId, and candidate’s log is at least as up-to-date as receiver’s log, grant vote (5.2, 5.4)
+     *
+     * ...If the logs have last entries with different terms, then
+     * the log with the later term is more up-to-date. If the logs
+     * end with the same term, then whichever log is longer is
+     * more up-to-date.
+     */
+
+    const lastLogIndex = this.persistent.log.length - 1;
+    const lastLogTerm =
+      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
+    const isLogUpToDate =
+      event.lastLogTerm > lastLogTerm ||
+      (event.lastLogTerm === lastLogTerm && event.lastLogIndex >= lastLogIndex);
 
     const voteGranted =
       (this.persistent.votedFor === null ||
         this.persistent.votedFor === event.candidateId) &&
-      this.isLogUpToDate(event.lastLogIndex, event.lastLogTerm);
+      isLogUpToDate;
 
     if (voteGranted) {
       this.persistent.votedFor = event.candidateId;
@@ -297,13 +336,19 @@ export class RaftNode {
   }
 
   private handleRequestVoteResponse(event: RequestVoteResponseEvent): void {
-    if (
-      event.term !== this.persistent.term ||
-      this.volatile.role !== "candidate"
-    ) {
+    if (this.volatile.role !== "candidate") return;
+
+    // Section 5.2
+    //If the term in the RPC is smaller than the candidate’s current term, then the candidate rejects the RPC and continues in candidate state.
+    if (event.term < this.persistent.term) return;
+    if (event.term > this.persistent.term) {
+      this.persistent.term = event.term;
+      this.persistent.votedFor = null;
+      this.volatile.role = "follower";
+      this.storage.setRaftNodeState(this.persistent);
+      this.electionTimer.reset();
       return;
     }
-
     if (!event.voteGranted) return;
 
     this.volatile.votes.add(event.from);
@@ -313,8 +358,6 @@ export class RaftNode {
     info(`${this.volatile.nodeId} become leader`);
 
     this.volatile.role = "leader";
-    this.electionTimer.stop();
-    this.heartbeatTimer.start();
 
     for (const nodeId of this.volatile.nodeIds) {
       if (nodeId !== this.volatile.nodeId) {
@@ -327,18 +370,22 @@ export class RaftNode {
   }
 
   private handleAppendEntries(event: AppendEntriesEvent): void {
+    // Section 5, AppendEntries RPC
+    // Reply false if term < currentTerm (5.1)
     if (event.term < this.persistent.term) {
       this.network.send(event.from, {
         type: "append-entries-response",
         from: this.volatile.nodeId,
         term: this.persistent.term,
         success: false,
-        matchIndex: this.volatile.commitIndex,
+        matchIndex: 0, // In case of false, matchIndex is not used.
       });
       return;
     }
 
-    if (event.term > this.persistent.term) {
+    if (event.term >= this.persistent.term) {
+      // NOTE: because there cannot be two different leaders with the same term,
+      // event.term == this.persistent.term means that event.from is the leader.
       this.persistent.term = event.term;
       this.persistent.votedFor = null;
       this.volatile.role = "follower";
@@ -353,6 +400,8 @@ export class RaftNode {
       event.entries
     );
 
+    // Section 5, AppendEntries RPC
+    // If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
     if (success && event.leaderCommit > this.volatile.commitIndex) {
       this.volatile.commitIndex = Math.min(
         event.leaderCommit,
@@ -366,9 +415,7 @@ export class RaftNode {
       from: this.volatile.nodeId,
       term: this.persistent.term,
       success,
-      matchIndex: success
-        ? event.prevLogIndex + event.entries.length
-        : this.volatile.commitIndex,
+      matchIndex: success ? event.prevLogIndex + event.entries.length : 0,
     });
   }
 
@@ -387,7 +434,8 @@ export class RaftNode {
       this.electionTimer.reset();
     }
 
-    // If follower is not up to date, send append entries again
+    // Section 5.3
+    // After a rejection, the leader decrements nextIndex and retries the AppendEntries RPC.
     if (!event.success) {
       this.volatile.nextIndex[event.from] = Math.max(
         this.volatile.nextIndex[event.from] - 1,
@@ -401,11 +449,18 @@ export class RaftNode {
     this.volatile.nextIndex[event.from] = event.matchIndex + 1;
     this.volatile.matchIndex[event.from] = event.matchIndex;
 
+    /**
+     * Section 5.3
+     * A log entry is committed once the leader
+     * that created the entry has replicated it on a majority of
+     * the servers
+     */
+
     // Calculate majority match index
     const matchIndexes = Object.values(this.volatile.matchIndex).concat(
       this.persistent.log.length - 1
     );
-    matchIndexes.sort((a, b) => b - a); // 내림차순
+    matchIndexes.sort((a, b) => b - a); // Descending order
     const majorityMatchIndex =
       matchIndexes[Math.floor(matchIndexes.length / 2)];
 
@@ -449,6 +504,7 @@ export class RaftNode {
     // Send append entries to all followers
     this.sendHeartbeats();
 
+    // FIXME: This is not correct. client response should be sent after the log is committed.
     this.network.send(event.from, {
       type: "client-request-response",
       from: this.volatile.nodeId,
