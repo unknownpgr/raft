@@ -1,0 +1,298 @@
+
+> raft@1.0.0 test
+> ts-node src/test.ts
+
+[+0.014] [INFO] bind: A
+[+0.015] [INFO] bind: B
+[+0.015] [INFO] bind: C
+[+0.016] [INFO] bind: CLIENT-L7V50Y
+[+0.016] [INFO] bind: CLIENT-36WM0V
+[+0.016] [INFO] bind: CLIENT-Q0P4N5
+[+0.116] [INFO] CLIENT-L7V50Y ==> A, message: client-query
+[+0.117] [INFO] CLIENT-36WM0V ==> B, message: client-query
+[+0.117] [INFO] CLIENT-Q0P4N5 ==> C, message: client-query
+[+0.217] [INFO] A ==> CLIENT-L7V50Y, message: client-query-response
+[+0.218] [INFO] B ==> CLIENT-36WM0V, message: client-query-response
+[+0.218] [INFO] C ==> CLIENT-Q0P4N5, message: client-query-response
+[+0.219] [INFO] [
+  {
+    "type": "client-query-response",
+    "from": "A",
+    "role": "follower"
+  },
+  {
+    "type": "client-query-response",
+    "from": "B",
+    "role": "follower"
+  },
+  {
+    "type": "client-query-response",
+    "from": "C",
+    "role": "follower"
+  }
+]
+[+1.535] [INFO] B start election
+[+1.568] [INFO] A start election
+[+1.636] [INFO] B ==> A, message: request-vote
+[+1.637] [INFO] B ==> C, message: request-vote
+[+1.668] [INFO] A ==> B, message: request-vote
+[+1.669] [INFO] A ==> C, message: request-vote
+[+1.737] [INFO] A ==> B, message: request-vote-response
+[+1.737] [INFO] C ==> B, message: request-vote-response
+[+1.737] [INFO] B become leader
+[+1.768] [INFO] B ==> A, message: request-vote-response
+[+1.770] [INFO] C ==> A, message: request-vote-response
+[+1.839] [INFO] B ==> A, message: append-entries
+[+1.839] [INFO] B ==> C, message: append-entries
+[+1.940] [INFO] A ==> B, message: append-entries-response
+[+1.940] [INFO] C ==> B, message: append-entries-response
+[+2.839] [INFO] B ==> A, message: append-entries
+[+2.839] [INFO] B ==> C, message: append-entries
+[+2.939] [INFO] A ==> B, message: append-entries-response
+[+2.940] [INFO] C ==> B, message: append-entries-response
+[+3.840] [INFO] B ==> A, message: append-entries
+[+3.840] [INFO] B ==> C, message: append-entries
+[+3.940] [INFO] A ==> B, message: append-entries-response
+[+3.941] [INFO] C ==> B, message: append-entries-response
+[+4.841] [INFO] B ==> A, message: append-entries
+[+4.841] [INFO] B ==> C, message: append-entries
+[+4.942] [INFO] A ==> B, message: append-entries-response
+[+4.942] [INFO] C ==> B, message: append-entries-response
+[+5.219] [INFO] bind: CLIENT-7K90SQ
+[+5.219] [INFO] bind: CLIENT-M9FNHL
+[+5.219] [INFO] bind: CLIENT-ACUGZ6
+[+5.319] [INFO] CLIENT-7K90SQ ==> A, message: client-query
+[+5.319] [INFO] CLIENT-M9FNHL ==> B, message: client-query
+[+5.319] [INFO] CLIENT-ACUGZ6 ==> C, message: client-query
+[+5.419] [INFO] A ==> CLIENT-7K90SQ, message: client-query-response
+[+5.420] [INFO] B ==> CLIENT-M9FNHL, message: client-query-response
+[+5.420] [INFO] C ==> CLIENT-ACUGZ6, message: client-query-response
+[+5.420] [INFO] Leader is B
+[+5.841] [INFO] B ==> A, message: append-entries
+[+5.841] [INFO] B ==> C, message: append-entries
+[+5.942] [INFO] A ==> B, message: append-entries-response
+[+5.942] [INFO] C ==> B, message: append-entries-response
+[+6.842] [INFO] B ==> A, message: append-entries
+[+6.842] [INFO] B ==> C, message: append-entries
+[+6.942] [INFO] A ==> B, message: append-entries-response
+[+6.943] [INFO] C ==> B, message: append-entries-response
+[+7.422] [INFO] bind: CLIENT-WTNUBL
+[+7.523] [INFO] CLIENT-WTNUBL ==> B, message: client-request
+[+7.622] [INFO] B ==> A, message: append-entries
+[+7.623] [INFO] B ==> C, message: append-entries
+[+7.623] [INFO] B ==> CLIENT-WTNUBL, message: client-request-response
+[+7.623] [INFO] {
+  "type": "client-request-response",
+  "from": "B",
+  "success": true
+}
+[+7.723] [INFO] A ==> B, message: append-entries-response
+[+7.723] [INFO] C ==> B, message: append-entries-response
+[+7.841] [INFO] B ==> A, message: append-entries
+[+7.842] [INFO] B ==> C, message: append-entries
+[+7.942] [INFO] A ==> B, message: append-entries-response
+[+7.942] [INFO] C ==> B, message: append-entries-response
+[+8.842] [INFO] B ==> A, message: append-entries
+[+8.842] [INFO] B ==> C, message: append-entries
+[+8.942] [INFO] A ==> B, message: append-entries-response
+[+8.943] [INFO] C ==> B, message: append-entries-response
+[+9.624] [INFO] B is dead
+[+10.441] [INFO] C start election
+[+10.447] [INFO] A start election
+[+10.541] [INFO] C ==> A, message: request-vote
+[+10.541] [INFO] C ==> B, message: request-vote
+[+10.548] [INFO] A ==> B, message: request-vote
+[+10.548] [INFO] A ==> C, message: request-vote
+[+10.641] [INFO] A ==> C, message: request-vote-response
+[+10.650] [INFO] C ==> A, message: request-vote-response
+[+11.963] [INFO] A start election
+[+12.064] [INFO] A ==> B, message: request-vote
+[+12.064] [INFO] A ==> C, message: request-vote
+[+12.164] [INFO] C ==> A, message: request-vote-response
+[+12.165] [INFO] A become leader
+[+12.265] [INFO] A ==> B, message: append-entries
+[+12.265] [INFO] A ==> C, message: append-entries
+[+12.366] [INFO] C ==> A, message: append-entries-response
+[+13.264] [INFO] A ==> B, message: append-entries
+[+13.265] [INFO] A ==> C, message: append-entries
+[+13.365] [INFO] C ==> A, message: append-entries-response
+[+14.265] [INFO] A ==> B, message: append-entries
+[+14.266] [INFO] A ==> C, message: append-entries
+[+14.366] [INFO] C ==> A, message: append-entries-response
+[+14.626] [INFO] bind: CLIENT-4HB7FR
+[+14.626] [INFO] bind: CLIENT-Q5OOKK
+[+14.726] [INFO] CLIENT-4HB7FR ==> A, message: client-query
+[+14.727] [INFO] CLIENT-Q5OOKK ==> C, message: client-query
+[+14.827] [INFO] A ==> CLIENT-4HB7FR, message: client-query-response
+[+14.827] [INFO] C ==> CLIENT-Q5OOKK, message: client-query-response
+[+14.827] [INFO] New leader is A
+[+14.827] [INFO] bind: CLIENT-0U8QQC
+[+14.928] [INFO] CLIENT-0U8QQC ==> A, message: client-request
+[+15.028] [INFO] A ==> B, message: append-entries
+[+15.028] [INFO] A ==> C, message: append-entries
+[+15.028] [INFO] A ==> CLIENT-0U8QQC, message: client-request-response
+[+15.129] [INFO] C ==> A, message: append-entries-response
+[+15.266] [INFO] A ==> B, message: append-entries
+[+15.266] [INFO] A ==> C, message: append-entries
+[+15.366] [INFO] C ==> A, message: append-entries-response
+[+16.266] [INFO] A ==> B, message: append-entries
+[+16.267] [INFO] A ==> C, message: append-entries
+[+16.367] [INFO] C ==> A, message: append-entries-response
+[+17.029] [INFO] bind: CLIENT-LZLY3C
+[+17.130] [INFO] CLIENT-LZLY3C ==> A, message: client-request
+[+17.231] [INFO] A ==> B, message: append-entries
+[+17.231] [INFO] A ==> C, message: append-entries
+[+17.231] [INFO] A ==> CLIENT-LZLY3C, message: client-request-response
+[+17.266] [INFO] A ==> B, message: append-entries
+[+17.267] [INFO] A ==> C, message: append-entries
+[+17.331] [INFO] C ==> A, message: append-entries-response
+[+17.366] [INFO] C ==> A, message: append-entries-response
+[+18.268] [INFO] A ==> B, message: append-entries
+[+18.268] [INFO] A ==> C, message: append-entries
+[+18.369] [INFO] C ==> A, message: append-entries-response
+[+19.232] [INFO] bind: CLIENT-JTAJBK
+[+19.269] [INFO] A ==> B, message: append-entries
+[+19.269] [INFO] A ==> C, message: append-entries
+[+19.332] [INFO] CLIENT-JTAJBK ==> A, message: client-request
+[+19.369] [INFO] C ==> A, message: append-entries-response
+[+19.433] [INFO] A ==> B, message: append-entries
+[+19.434] [INFO] A ==> C, message: append-entries
+[+19.434] [INFO] A ==> CLIENT-JTAJBK, message: client-request-response
+[+19.534] [INFO] C ==> A, message: append-entries-response
+[+20.269] [INFO] A ==> B, message: append-entries
+[+20.269] [INFO] A ==> C, message: append-entries
+[+20.370] [INFO] C ==> A, message: append-entries-response
+[+21.270] [INFO] A ==> B, message: append-entries
+[+21.270] [INFO] A ==> C, message: append-entries
+[+21.370] [INFO] C ==> A, message: append-entries-response
+[+21.434] [INFO] {
+  "term": 3,
+  "votedFor": "A",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 3,
+      "command": "Event2"
+    },
+    {
+      "term": 3,
+      "command": "Event3"
+    },
+    {
+      "term": 3,
+      "command": "Event4"
+    }
+  ]
+}
+[+21.434] [INFO] {
+  "term": 1,
+  "votedFor": "B",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    }
+  ]
+}
+[+21.434] [INFO] {
+  "term": 3,
+  "votedFor": "A",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 3,
+      "command": "Event2"
+    },
+    {
+      "term": 3,
+      "command": "Event3"
+    },
+    {
+      "term": 3,
+      "command": "Event4"
+    }
+  ]
+}
+[+21.434] [INFO] bind: B
+[+21.435] [INFO] B is revived
+[+22.271] [INFO] A ==> B, message: append-entries
+[+22.271] [INFO] A ==> C, message: append-entries
+[+22.370] [INFO] B ==> A, message: append-entries-response
+[+22.372] [INFO] C ==> A, message: append-entries-response
+[+23.272] [INFO] A ==> B, message: append-entries
+[+23.273] [INFO] A ==> C, message: append-entries
+[+23.373] [INFO] B ==> A, message: append-entries-response
+[+23.373] [INFO] C ==> A, message: append-entries-response
+[+23.435] [INFO] All nodes are dead
+[+23.435] [INFO] {
+  "term": 3,
+  "votedFor": "A",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 3,
+      "command": "Event2"
+    },
+    {
+      "term": 3,
+      "command": "Event3"
+    },
+    {
+      "term": 3,
+      "command": "Event4"
+    }
+  ]
+}
+[+23.435] [INFO] {
+  "term": 3,
+  "votedFor": null,
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 3,
+      "command": "Event2"
+    },
+    {
+      "term": 3,
+      "command": "Event3"
+    },
+    {
+      "term": 3,
+      "command": "Event4"
+    }
+  ]
+}
+[+23.435] [INFO] {
+  "term": 3,
+  "votedFor": "A",
+  "log": [
+    {
+      "term": 1,
+      "command": "Event1"
+    },
+    {
+      "term": 3,
+      "command": "Event2"
+    },
+    {
+      "term": 3,
+      "command": "Event3"
+    },
+    {
+      "term": 3,
+      "command": "Event4"
+    }
+  ]
+}
