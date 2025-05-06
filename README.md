@@ -4,21 +4,21 @@ This project is a TypeScript implementation of the Raft consensus algorithm, whi
 
 ## Project Structure
 
-- `raft.ts` - Main implementation of the Raft consensus algorithm
-- `types.ts` - Type definitions for the Raft implementation
-- `interfaces.ts` - Interface definitions for the Raft components
+- `core/raft.ts` - Main implementation of the Raft consensus algorithm
+- `core/types.ts` - Type definitions for the Raft implementation
+- `core/interfaces.ts` - Interface definitions for the Raft components
+- `core/logger.ts` - Output handling utilities
 - `test.ts` - Test suite for the Raft implementation
-- `output.ts` - Output handling utilities
 
 ### Mock Components
 
 The project includes several mock components for testing:
 
-- `mockElectionTimer.ts` - Mock implementation of election timer
-- `mockHeartbeatTimer.ts` - Mock implementation of heartbeat timer
-- `mockRaftNetwork.ts` - Mock implementation of network communication
-- `mockStateMachine.ts` - Mock implementation of state machine
-- `mockPersistentStorage.ts` - Mock implementation of persistent storage
+- `mocks/mockElectionTimer.ts` - Mock implementation of election timer
+- `mocks/mockHeartbeatTimer.ts` - Mock implementation of heartbeat timer
+- `mocks/mockRaftNetwork.ts` - Mock implementation of network communication
+- `mocks/mockStateMachine.ts` - Mock implementation of state machine
+- `mocks/mockPersistentStorage.ts` - Mock implementation of persistent storage
 
 ## Prerequisites
 
@@ -36,12 +36,6 @@ npm install
 ```bash
 npm test
 ```
-
-## Project Dependencies
-
-- TypeScript
-- ts-jest (for TypeScript testing support)
-- ts-node (for running TypeScript directly)
 
 ## Development
 
