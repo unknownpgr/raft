@@ -5,18 +5,18 @@ import {
   RaftNetwork,
   StateMachine,
 } from "./interfaces";
-import { info } from "./logger";
+import { error, info } from "./logger";
 import {
   PersistentState,
   VolatileState,
   LogEntry,
   RaftEvent,
-  HeartbeatEvent,
   RequestVoteEvent,
   RequestVoteResponseEvent,
   AppendEntriesEvent,
   ClientQueryEvent,
   ClientRequestEvent,
+  AppendEntriesResponseEvent,
 } from "./types";
 
 export class RaftNode {
@@ -67,6 +67,12 @@ export class RaftNode {
     this.stateMachine = stateMachine;
     this.electionTimer = electionTimer;
     this.heartbeatTimer = heartbeatTimer;
+
+    // Setup nextIndex and matchIndex for all nodes
+    for (const nodeId of this.volatile.nodeIds) {
+      this.volatile.nextIndex[nodeId] = this.persistent.log.length;
+      this.volatile.matchIndex[nodeId] = -1;
+    }
 
     // Setup event handlers
     this.network.bind(this.volatile.nodeId, this.handleEvent.bind(this));
@@ -153,6 +159,7 @@ export class RaftNode {
   }
 
   private applyCommittedEntries(): void {
+    info(`Committed on ${this.volatile.nodeId}`);
     while (this.volatile.lastApplied < this.volatile.commitIndex) {
       this.volatile.lastApplied++;
       const entry = this.persistent.log[this.volatile.lastApplied];
@@ -172,11 +179,6 @@ export class RaftNode {
         break;
       }
 
-      case "heartbeat": {
-        this.handleHeartbeat(event as HeartbeatEvent);
-        break;
-      }
-
       case "request-vote": {
         this.handleRequestVote(event as RequestVoteEvent);
         break;
@@ -192,6 +194,11 @@ export class RaftNode {
         break;
       }
 
+      case "append-entries-response": {
+        this.handleAppendEntriesResponse(event as AppendEntriesResponseEvent);
+        break;
+      }
+
       case "client-query": {
         this.handleClientQuery(event as ClientQueryEvent);
         break;
@@ -199,6 +206,12 @@ export class RaftNode {
 
       case "client-request": {
         this.handleClientRequest(event as ClientRequestEvent);
+        break;
+      }
+
+      default: {
+        error(`Unknown event: ${event.type}`);
+        throw new Error(`Unknown event: ${event.type}`);
         break;
       }
     }
@@ -241,21 +254,6 @@ export class RaftNode {
           lastLogTerm,
         });
       }
-    }
-
-    this.electionTimer.reset();
-  }
-
-  private handleHeartbeat(event: HeartbeatEvent): void {
-    if (event.term < this.persistent.term) {
-      return;
-    }
-
-    if (event.term > this.persistent.term) {
-      this.persistent.term = event.term;
-      this.persistent.votedFor = null;
-      this.volatile.role = "follower";
-      this.storage.setRaftNodeState(this.persistent);
     }
 
     this.electionTimer.reset();
@@ -372,6 +370,53 @@ export class RaftNode {
         ? event.prevLogIndex + event.entries.length
         : this.volatile.commitIndex,
     });
+  }
+
+  private handleAppendEntriesResponse(event: AppendEntriesResponseEvent): void {
+    // Ignore old messages
+    if (event.term < this.persistent.term) {
+      return;
+    }
+
+    // Immediately became follower if term is higher
+    if (event.term > this.persistent.term) {
+      this.persistent.term = event.term;
+      this.persistent.votedFor = null;
+      this.volatile.role = "follower";
+      this.storage.setRaftNodeState(this.persistent);
+      this.electionTimer.reset();
+    }
+
+    // If follower is not up to date, send append entries again
+    if (!event.success) {
+      this.volatile.nextIndex[event.from] = Math.max(
+        this.volatile.nextIndex[event.from] - 1,
+        0
+      );
+      this.sendAppendEntries(event.from);
+      return;
+    }
+
+    // Update nextIndex and matchIndex
+    this.volatile.nextIndex[event.from] = event.matchIndex + 1;
+    this.volatile.matchIndex[event.from] = event.matchIndex;
+
+    // Calculate majority match index
+    const matchIndexes = Object.values(this.volatile.matchIndex).concat(
+      this.persistent.log.length - 1
+    );
+    matchIndexes.sort((a, b) => b - a); // 내림차순
+    const majorityMatchIndex =
+      matchIndexes[Math.floor(matchIndexes.length / 2)];
+
+    // If majority of nodes have replicated up to this index, commit
+    if (
+      majorityMatchIndex > this.volatile.commitIndex &&
+      this.persistent.log[majorityMatchIndex].term === this.persistent.term
+    ) {
+      this.volatile.commitIndex = majorityMatchIndex;
+      this.applyCommittedEntries();
+    }
   }
 
   private handleClientQuery(event: ClientQueryEvent): void {

@@ -28,13 +28,6 @@ export type VolatileState = {
   matchIndex: Record<string, number>;
 };
 
-export interface HeartbeatEvent {
-  type: "heartbeat";
-  from: string;
-  term: number;
-  leaderId: string;
-}
-
 export interface RequestVoteEvent {
   type: "request-vote";
   from: string;
@@ -103,7 +96,6 @@ export interface ClientRequestResponseEvent {
 }
 
 export type RaftEvent =
-  | HeartbeatEvent
   | RequestVoteEvent
   | RequestVoteResponseEvent
   | AppendEntriesEvent
