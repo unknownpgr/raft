@@ -20,6 +20,9 @@ export type VolatileState = {
   commitIndex: number;
   lastApplied: number;
 
+  // For candidates
+  votes: Set<string>;
+
   // For leaders
   nextIndex: Record<string, number>;
   matchIndex: Record<string, number>;

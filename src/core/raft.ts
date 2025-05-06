@@ -22,7 +22,6 @@ import {
 export class RaftNode {
   private persistent: PersistentState;
   private volatile: VolatileState;
-  private votes: Set<string>;
 
   // External Components
   private storage: PersistentStorage;
@@ -62,8 +61,8 @@ export class RaftNode {
       lastApplied: -1,
       nextIndex: {},
       matchIndex: {},
+      votes: new Set(),
     };
-    this.votes = new Set();
     this.network = network;
     this.stateMachine = stateMachine;
     this.electionTimer = electionTimer;
@@ -88,6 +87,77 @@ export class RaftNode {
 
   public getNodeId(): string {
     return this.volatile.nodeId;
+  }
+
+  private isLogUpToDate(
+    candidateLastLogIndex: number,
+    candidateLastLogTerm: number
+  ): boolean {
+    const lastLogIndex = this.persistent.log.length - 1;
+    const lastLogTerm =
+      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
+
+    return (
+      candidateLastLogTerm > lastLogTerm ||
+      (candidateLastLogTerm === lastLogTerm &&
+        candidateLastLogIndex >= lastLogIndex)
+    );
+  }
+
+  private sendHeartbeats(): void {
+    for (const nodeId of this.volatile.nodeIds) {
+      if (nodeId !== this.volatile.nodeId) {
+        this.sendAppendEntries(nodeId);
+      }
+    }
+  }
+
+  private sendAppendEntries(to: string): void {
+    const prevLogIndex = this.volatile.nextIndex[to] - 1;
+    const prevLogTerm =
+      prevLogIndex >= 0 ? this.persistent.log[prevLogIndex].term : 0;
+    const entries = this.persistent.log.slice(this.volatile.nextIndex[to]);
+
+    this.network.send(to, {
+      type: "append-entries",
+      from: this.volatile.nodeId,
+      term: this.persistent.term,
+      leaderId: this.volatile.nodeId,
+      prevLogIndex,
+      prevLogTerm,
+      entries,
+      leaderCommit: this.volatile.commitIndex,
+    });
+  }
+
+  private appendEntries(
+    prevLogIndex: number,
+    prevLogTerm: number,
+    entries: LogEntry[]
+  ): boolean {
+    if (
+      prevLogIndex >= 0 &&
+      (prevLogIndex >= this.persistent.log.length ||
+        this.persistent.log[prevLogIndex].term !== prevLogTerm)
+    ) {
+      return false;
+    }
+
+    // Remove conflicting entries and append new ones
+    let newLog = this.persistent.log.slice(0, prevLogIndex + 1);
+    newLog = newLog.concat(entries);
+    this.persistent.log = newLog;
+    this.storage.setRaftNodeState(this.persistent);
+
+    return true;
+  }
+
+  private applyCommittedEntries(): void {
+    while (this.volatile.lastApplied < this.volatile.commitIndex) {
+      this.volatile.lastApplied++;
+      const entry = this.persistent.log[this.volatile.lastApplied];
+      this.stateMachine.apply(entry.command);
+    }
   }
 
   private handleEvent(event: RaftEvent): void {
@@ -153,7 +223,7 @@ export class RaftNode {
 
     // Vote for self
     this.persistent.votedFor = this.volatile.nodeId;
-    this.votes = new Set([this.volatile.nodeId]);
+    this.volatile.votes = new Set([this.volatile.nodeId]);
     this.storage.setRaftNodeState(this.persistent);
 
     const lastLogIndex = this.persistent.log.length - 1;
@@ -238,9 +308,9 @@ export class RaftNode {
 
     if (!event.voteGranted) return;
 
-    this.votes.add(event.from);
+    this.volatile.votes.add(event.from);
 
-    if (this.votes.size <= this.volatile.nodeIds.length / 2) return;
+    if (this.volatile.votes.size <= this.volatile.nodeIds.length / 2) return;
 
     info(`${this.volatile.nodeId} become leader`);
 
@@ -302,77 +372,6 @@ export class RaftNode {
         ? event.prevLogIndex + event.entries.length
         : this.volatile.commitIndex,
     });
-  }
-
-  private isLogUpToDate(
-    candidateLastLogIndex: number,
-    candidateLastLogTerm: number
-  ): boolean {
-    const lastLogIndex = this.persistent.log.length - 1;
-    const lastLogTerm =
-      lastLogIndex >= 0 ? this.persistent.log[lastLogIndex].term : 0;
-
-    return (
-      candidateLastLogTerm > lastLogTerm ||
-      (candidateLastLogTerm === lastLogTerm &&
-        candidateLastLogIndex >= lastLogIndex)
-    );
-  }
-
-  private sendHeartbeats(): void {
-    for (const nodeId of this.volatile.nodeIds) {
-      if (nodeId !== this.volatile.nodeId) {
-        this.sendAppendEntries(nodeId);
-      }
-    }
-  }
-
-  private sendAppendEntries(to: string): void {
-    const prevLogIndex = this.volatile.nextIndex[to] - 1;
-    const prevLogTerm =
-      prevLogIndex >= 0 ? this.persistent.log[prevLogIndex].term : 0;
-    const entries = this.persistent.log.slice(this.volatile.nextIndex[to]);
-
-    this.network.send(to, {
-      type: "append-entries",
-      from: this.volatile.nodeId,
-      term: this.persistent.term,
-      leaderId: this.volatile.nodeId,
-      prevLogIndex,
-      prevLogTerm,
-      entries,
-      leaderCommit: this.volatile.commitIndex,
-    });
-  }
-
-  private appendEntries(
-    prevLogIndex: number,
-    prevLogTerm: number,
-    entries: LogEntry[]
-  ): boolean {
-    if (
-      prevLogIndex >= 0 &&
-      (prevLogIndex >= this.persistent.log.length ||
-        this.persistent.log[prevLogIndex].term !== prevLogTerm)
-    ) {
-      return false;
-    }
-
-    // Remove conflicting entries and append new ones
-    let newLog = this.persistent.log.slice(0, prevLogIndex + 1);
-    newLog = newLog.concat(entries);
-    this.persistent.log = newLog;
-    this.storage.setRaftNodeState(this.persistent);
-
-    return true;
-  }
-
-  private applyCommittedEntries(): void {
-    while (this.volatile.lastApplied < this.volatile.commitIndex) {
-      this.volatile.lastApplied++;
-      const entry = this.persistent.log[this.volatile.lastApplied];
-      this.stateMachine.apply(entry.command);
-    }
   }
 
   private handleClientQuery(event: ClientQueryEvent): void {
